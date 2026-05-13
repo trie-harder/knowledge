@@ -500,3 +500,17 @@ Do you need crash isolation?
   └── Yes → Processes
   └── No  → Threads
 ```
+
+---
+
+## Summary
+
+- A **process** is the OS's isolated container for a running program — its own virtual address space, heap, code, and file descriptors. Processes cannot accidentally access each other's memory.
+- A **thread** is a unit of execution within a process. Threads are cheaper to create than processes and share the same heap, but have no memory isolation between them.
+- The OS **scheduler** creates the illusion of concurrency by rapidly switching between threads on limited cores. True parallelism requires multiple cores running simultaneously.
+- **Concurrency models:**
+  - Preemptive OS threads — OS switches automatically; shared state needs locks
+  - Cooperative async (`asyncio`) — code yields voluntarily; no locks needed for shared state within one thread
+  - Multiple processes — full isolation; communication via IPC (pipes, queues, shared memory)
+- **Shared mutable state** between threads requires explicit synchronization (mutexes, semaphores, atomics) to avoid race conditions and deadlocks.
+- **Context switch cost:** thread switches are cheap (same page table, TLB stays warm); process switches are expensive (new page table, TLB flush).

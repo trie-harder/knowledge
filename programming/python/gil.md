@@ -211,7 +211,7 @@ GraalPy, Jython, and IronPython get true parallel threads for free because they 
 
 ### Why previous attempts failed
 
-The naive approach is to make every `ob_refcnt` update an atomic CPU operation. Atomic operations require cache coherence coordination across cores — significantly more expensive than plain memory writes. Benchmarks showed this caused **~5x single-threaded slowdown**. Unacceptable — most Python code doesn't use threads, and making it 5x slower to support a use case most programs don't have was a non-starter.
+The naive approach is to make every `ob_refcnt` update an atomic CPU operation. Atomic operations require cache coherence coordination across cores — significantly more expensive than plain memory writes. Benchmarks showed this caused **~5x single-threaded slowdown**. Unacceptable — most Python code doesn't use threads, and making it 5x slower to support a use case most programs don't have was a non-starter. (See [hardware/cpu-cache-and-atomics.md](../../hardware/cpu-cache-and-atomics.md) for why atomic operations are expensive at the hardware level.)
 
 ### How PEP 703 solved it: biased reference counting
 
@@ -250,3 +250,14 @@ The no-GIL build is opt-in and experimental in 3.13. The plan is for it to stabi
 ### The new responsibility
 
 Without the GIL, race conditions in your own code that were previously hidden by accidental serialization become real bugs. Any mutable shared state between threads now needs explicit synchronization. The tools are the same (`threading.Lock`, `queue.Queue`, etc.) — they just become mandatory rather than optional for correctness.
+
+---
+
+## Summary
+
+- The **GIL** (Global Interpreter Lock) is a mutex inside CPython that allows only **one thread to execute Python bytecode at a time**, regardless of how many cores are available.
+- It exists because CPython uses **reference counting** for memory management. Without the GIL, concurrent threads would corrupt `ob_refcnt` updates, causing use-after-free bugs or memory leaks.
+- The GIL is **released during I/O** (network, disk, `time.sleep`) — so threads are genuinely useful for I/O-bound concurrency.
+- For **CPU-bound work**, threads provide no parallelism. Use `multiprocessing` or `ProcessPoolExecutor` to get multiple processes with separate GILs.
+- **Other implementations** (GraalPy, Jython, IronPython) have no GIL because they use tracing garbage collection instead of refcounting. Go and Java have no GIL for the same reason.
+- **CPython 3.13** introduces an opt-in no-GIL build (PEP 703) using biased reference counting — non-atomic refcounts in the common single-thread case, atomic only when an object is genuinely shared across threads.

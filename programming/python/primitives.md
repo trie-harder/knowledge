@@ -268,3 +268,14 @@ import numpy as np
 arr = np.array([1, 2, 3], dtype=np.int64)
 print(arr.itemsize)              # 8 bytes — raw int64, like Go/Java
 ```
+
+---
+
+## Summary
+
+- Python 3 has **no true primitives** — every value (int, float, bool, str) is a heap-allocated object with a type pointer, reference count, and methods.
+- This differs from **Go** (value types stored directly, fixed-size integers, stack-allocated when possible) and **Java** (8 true primitives + boxed object equivalents with autoboxing).
+- **`bool` is a subclass of `int`** at the C level: `PyBool_Type.tp_base` points to `PyLong_Type`. `True` and `False` are statically allocated `_longobject` structs — immortal singletons that `bool()` always returns without allocating.
+- CPython pre-allocates integers **-5 through 256** as singletons (the small-int cache). `a is b` is `True` for values in this range; `False` outside it.
+- **Memory cost:** a Python `int` is ~28 bytes vs. 8 bytes for an `int64` in Go/Java. Every arithmetic operation may allocate a new object.
+- For numeric-heavy work, use **NumPy** — arrays store raw C values contiguously in memory, bypassing the per-object overhead entirely.
