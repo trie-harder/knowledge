@@ -144,3 +144,5 @@ Always merge the two lowest-frequency nodes first. The resulting tree minimises 
 | Shortest path (negative edges) | Dijkstra (greedy) | No — use Bellman-Ford |
 
 **Rule of thumb:** if choices are independent (one choice doesn't block or affect the value of another), greedy is likely correct. If choices interact — one decision changes what future decisions are worth — reach for DP.
+
+See [dynamic-programming.md](dynamic-programming.md) for DP patterns, and [greedy-vs-dp.md](greedy-vs-dp.md) for a detailed comparison including when 1D DP collapses to greedy.

@@ -16,6 +16,14 @@ Min-heap example:
 
 No sorting between siblings — only the parent/child relationship is enforced. This is what makes heaps faster than a sorted array for priority-queue operations.
 
+## Shape Guarantee
+
+A heap is always a **complete binary tree** — every level fully filled except possibly the last, which fills left to right. This shape is not something `heapify` produces; it is a structural precondition encoded by the array itself. The index formulas (`left = 2i+1`, `right = 2i+2`) only make sense for a complete tree, so any array of length N implicitly represents one.
+
+The heap property (parent ≤ children) is what `heapify` establishes. The shape is already fixed before any comparisons happen.
+
+This guarantees height = ⌊log₂ N⌋ with no worst-case skew — unlike a BST where inserting sorted input gives O(N) height.
+
 ## Etymology
 
 The name comes from an informal meaning of *heap* — a pile of things where you can always quickly grab the "best" one off the top, without caring about the internal order of the rest. It was coined by J.W.J. Williams in his 1964 paper introducing heapsort.
@@ -47,11 +55,33 @@ In a heap of N nodes, the number of nodes at each height h is at most ⌈N / 2^(
 | ...    | ...      | ...            | ...           |
 | log N  | 1 (root) | log N          | log N         |
 
-Total work = N × Σ(h / 2^h) for h = 0 to log N. This sum is a well-known series that converges to 2, so the total is **O(2N) = O(N)**.
+**Deriving the total from the table:**
 
-Contrast with N calls to `heappush` (sift-**up**): each push starts at the bottom and may travel all the way to the root, so the work is concentrated at the nodes with the *most* height. That gives the full O(N log N).
+Each row contributes `(nodes at height h) × (cost per node)`. Nodes at height h ≈ N / 2^(h+1), and sift-down cost is h:
 
-The key insight: **sift-down** builds from the bottom up and does cheap work on the numerous leaf-level nodes; **sift-up** builds from the top down and does expensive work on those same nodes.
+$$\text{Total work} = \sum_{h=0}^{\lfloor \log N \rfloor} \frac{N}{2^{h+1}} \cdot h = \frac{N}{2} \sum_{h=0}^{\lfloor \log N \rfloor} \frac{h}{2^h}$$
+
+Bounding by the infinite series (which only adds positive terms):
+
+$$\leq \frac{N}{2} \sum_{h=0}^{\infty} \frac{h}{2^h}$$
+
+That infinite sum evaluates to 2. To see why, start from the geometric series and differentiate:
+
+$$\sum_{h=0}^{\infty} x^h = \frac{1}{1-x} \quad \xrightarrow{\text{d/dx, then} \times x} \quad \sum_{h=0}^{\infty} h \cdot x^h = \frac{x}{(1-x)^2}$$
+
+Substitute $x = \tfrac{1}{2}$:
+
+$$\sum_{h=0}^{\infty} \frac{h}{2^h} = \frac{\tfrac{1}{2}}{(\tfrac{1}{2})^2} = \frac{\tfrac{1}{2}}{\tfrac{1}{4}} = 2$$
+
+So total work ≤ (N/2) × 2 = **N = O(N)**.
+
+Contrast with N calls to `heappush` (sift-**up**): each element is appended to the bottom and may travel all the way to the root. The i-th insertion costs O(log i), so the total is:
+
+$$\sum_{i=1}^{N} \log i = \log(N!) \approx N \log N$$
+
+Concretely, the last N/2 insertions each go into a heap already of height O(log N) — half the elements pay the full price.
+
+The key insight: **sift-down (heapify)** does cheap work on the numerous bottom nodes (leaves cost 0, near-leaves cost 1, …); **N × heappush** pays O(log N) for each of the last N/2 insertions because the heap is already tall by then.
 
 ### Implementation
 
@@ -115,6 +145,26 @@ k_largest = heapq.nlargest(3, [5, 1, 8, 3, 9])  # [9, 8, 5]
 
 # K smallest — O(N log K)
 k_smallest = heapq.nsmallest(3, [5, 1, 8, 3, 9])  # [1, 3, 5]
+```
+
+### `nlargest` / `nsmallest` — complexity and mutation
+
+Both functions accept any iterable and return a **new list**. The original is never modified; elements in the result are the same objects (shallow), not copies.
+
+| | `nlargest(k, it)` | `nsmallest(k, it)` |
+|---|---|---|
+| Internal structure | min-heap of size K | max-heap of size K (negated) |
+| Time | O(N log K) | O(N log K) |
+| Space | O(K) | O(K) |
+
+CPython fallback: if `K >= N/2`, both functions switch to `sorted(...)[::±1][:K]` — O(N log N) time, O(N) space. For typical use where K << N you get the O(N log K) path.
+
+```python
+points = [[1,3], [-2,2], [5,8]]
+result = heapq.nsmallest(2, points, key=lambda p: p[0]**2 + p[1]**2)
+# result → [[-2, 2], [1, 3]]   (new list)
+# points → [[1,3], [-2,2], [5,8]]  (unchanged)
+# result[0] is points[1]  → True  (same object, not a copy)
 ```
 
 ## Pattern: K Smallest in a Stream

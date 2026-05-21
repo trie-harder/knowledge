@@ -338,3 +338,48 @@ Can outperform comparison sorts when n is large and w is small.
 - Need guaranteed O(n log n) + O(1) space → Heapsort
 - Integers in bounded range → Counting Sort or Radix Sort
 - Small / nearly-sorted arrays → Insertion Sort
+
+---
+
+## Python `list.sort()` — Using `key`
+
+`list.sort()` and `sorted()` accept a `key` callable. Python extracts the key from each element once, sorts by those keys, then returns the elements — never calling a comparator directly between two elements (unlike C++'s `std::sort` comparator).
+
+```python
+# Sort by a single field
+words = ["banana", "fig", "apple", "date"]
+words.sort(key=len)                      # ["fig", "fig", "date", "apple", "banana"]
+words.sort(key=str.lower)                # case-insensitive alphabetical
+
+# Sort objects by attribute
+people = [("Alice", 30), ("Bob", 25), ("Carol", 30)]
+people.sort(key=lambda p: p[1])          # by age ascending
+
+# Multi-key: primary ascending age, secondary ascending name (alphabetical)
+people.sort(key=lambda p: (p[1], p[0]))
+
+# Reverse a single key without negating strings — wrap in a class
+from functools import cmp_to_key
+
+# Descending on one field, ascending on another (cleaner with negation for numbers)
+people.sort(key=lambda p: (-p[1], p[0]))  # age desc, name asc
+```
+
+**`key` vs `cmp_to_key`:** Prefer `key` always — it's O(N) extractions then standard comparisons. `cmp_to_key` wraps an old-style two-argument comparator (like Python 2's `cmp`) into a key object; use it only when the comparison logic can't be expressed as a extracted value (e.g. custom locale sorting, version strings).
+
+```python
+from functools import cmp_to_key
+
+def version_cmp(a, b):
+    # compare "1.10.2" vs "1.9.0" numerically per segment
+    for x, y in zip(map(int, a.split(".")), map(int, b.split("."))):
+        if x != y:
+            return x - y  # negative → a first, positive → b first
+    return len(a) - len(b)
+
+versions = ["1.10.2", "1.9.0", "2.0.0", "1.9.1"]
+versions.sort(key=cmp_to_key(version_cmp))
+# ["1.9.0", "1.9.1", "1.10.2", "2.0.0"]
+```
+
+Both `list.sort()` (in-place, returns `None`) and `sorted()` (returns new list) accept the same `key` and `reverse` arguments.
