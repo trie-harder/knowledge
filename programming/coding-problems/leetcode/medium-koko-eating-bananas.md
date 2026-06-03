@@ -20,7 +20,7 @@ If feasible → try a smaller `k`. If not → need a larger `k`.
 ```
 search space: [1 .............. max(piles)]
                ↑                     ↑
-          slowest (1 banana/hr)   fastest (whole pile in 1 hr — never need faster)
+          slowest (1 banana/hr)   fastest (whole pile in 1 hr — nevser need faster)
 
 [NOT | NOT | feasible | feasible | feasible | feasible]
               ↑

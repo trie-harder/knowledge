@@ -120,17 +120,13 @@ def longestPalindrome(s: str) -> str:
     #
     # So dp[i][j] depends on dp[i+1][j-1] — a strictly shorter substring.
     # Fill by increasing length so dp[i+1][j-1] is always ready.
-    #
-    # diff = j - i = index gap = length - 1
-    #   diff=2 → length 3 (first batch needing the recurrence)
-    #   diff=n-1 → length n (full string)
-    # range(n - diff): keeps j = i + diff in bounds (j <= n-1 means i <= n-1-diff)
-    for diff in range(2, n):          # diff = j - i; same as length in range(3, n+1)
-        for i in range(n - diff):     # i + diff <= n-1, so j stays in bounds
-            j = i + diff
+    for length in range(3, n + 1):
+        for i in range(n - length + 1):
+            j = i + length - 1
             if s[i] == s[j] and dp[i+1][j-1]:
                 dp[i][j] = True
-                start, best = i, diff + 1   # diff + 1 = length
+                if length > best:
+                    start, best = i, length
 
     return s[start:start + best]
 ```
